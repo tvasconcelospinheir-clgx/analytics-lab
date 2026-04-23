@@ -15,6 +15,9 @@ projects/*/data/**
 projects/*/outputs/**
 !projects/*/outputs/.gitkeep
 shared_data/**
+!shared_data/
+!shared_data/raw/
+!shared_data/processed/
 !shared_data/**/.gitkeep
 
 # Legacy root data folder
