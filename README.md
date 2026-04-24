@@ -18,6 +18,10 @@ Each request should live in its own folder under `projects/`, with isolated data
 
 ## Current Request
 
+### Goal (OneHome Personas)
+
+The product goal for the current request is to understand the most common flows of users and agents in OneHome, using cluster-analysis-style behavioral patterns to identify practical personas and explain what each persona is doing in OneHome.
+
 - `projects/20260423_mixpanel-oh-flows/run.py`: main runner for this request.
 - `projects/20260423_mixpanel-oh-flows/data/raw/`: raw pulled data.
 - `projects/20260423_mixpanel-oh-flows/data/processed/`: cleaned outputs.
