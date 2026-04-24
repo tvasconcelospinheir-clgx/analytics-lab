@@ -1,42 +1,54 @@
 # Analytics Lab
 
-This repository uses a self-contained project pattern: each request lives under `projects/YYYYMMDD_project-name/` with its own `data/`, `notebooks/`, and `outputs/` folders.
+Reusable analytics workspace for request-based projects.
 
-## Current Project
+Each request should live in its own folder under `projects/`, with isolated data, notebooks, and outputs.
 
-- `projects/analytics-lab/run.py`: entry point for this request.
-- `projects/analytics-lab/data/raw/`: API pulls.
-- `projects/analytics-lab/data/processed/`: cleaned/analysis-ready outputs.
-- `projects/analytics-lab/notebooks/`: project notebooks.
-- `projects/analytics-lab/outputs/`: final artifacts for sharing.
+## Folder Purpose
 
-## Shared Code
+- `projects/`: request-specific work folders.
+- `projects/analytics-lab/`: current request implementation.
+- `references/`: static reference material and notes.
+- `scratchpad/`: temporary local experiments.
+- `scripts/`: helper scripts for project scaffolding.
+- `shared_data/`: cross-project shared datasets.
+- `src/`: reusable shared code.
+- `src/common/`: generic utilities (exports, QA helpers).
+- `src/connectors/`: external-system/API connectors.
 
-- `src/connectors/mixpanel.py`: Mixpanel API client and request handling.
-- `src/common/export.py`: shared JSON/CSV writers.
-- `src/common/qa.py`: reusable quality checks.
+## Current Request
 
-## Setup
+- `projects/analytics-lab/run.py`: main runner for this request.
+- `projects/analytics-lab/data/raw/`: raw pulled data.
+- `projects/analytics-lab/data/processed/`: cleaned outputs.
+- `projects/analytics-lab/notebooks/`: exploratory notebooks.
+- `projects/analytics-lab/outputs/`: share-ready deliverables.
 
-1. Create `.env` from `.env.example` and fill:
-   - `MIXPANEL_PROJECT_ID`
-   - `MIXPANEL_SERVICE_ACCOUNT_USERNAME`
-   - `MIXPANEL_SERVICE_ACCOUNT_SECRET`
-   - `MIXPANEL_VERIFY_SSL=true`
-   - `MIXPANEL_CA_BUNDLE=` (optional org CA bundle path)
-2. Create environment (Conda):
+## Environment Setup
+
+1. Create `.env` from `.env.example`.
+2. Create Conda environment:
    - `conda env create -f environment.yml`
    - `conda activate analytics_base`
 
-## Run
+## Connector Setup (Mixpanel for Current Request)
+
+If you are running the current Mixpanel request, fill these in `.env`:
+
+- `MIXPANEL_PROJECT_ID`
+- `MIXPANEL_SERVICE_ACCOUNT_USERNAME`
+- `MIXPANEL_SERVICE_ACCOUNT_SECRET`
+- `MIXPANEL_VERIFY_SSL=true`
+- `MIXPANEL_CA_BUNDLE=` (optional org CA bundle path)
+
+## Run Current Request
 
 - `python projects/analytics-lab/run.py`
 
-Or run the VS Code task `Run Mixpanel Pull`.
-
-## Start Next Request
+## Start a New Request Folder
 
 - `python scripts/run_request.py <project-name>`
 
 Example:
+
 - `python scripts/run_request.py pendo-onboarding`
