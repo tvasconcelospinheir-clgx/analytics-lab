@@ -35,6 +35,25 @@ The product goal for the current request is to understand the most common flows 
    - `conda env create -f environment.yml`
    - `conda activate analytics_base`
 
+## API Rate Limit Best Practices
+
+When querying external APIs (Mixpanel, Confluence, or any future connector), always respect published rate limits to avoid being blocked.
+
+**Mixpanel Query API limits (as of 2026):**
+- Max 5 concurrent queries
+- Max 60 queries per hour
+- Returns HTTP 429 when exceeded
+
+**Required connector behavior:**
+- Space requests by at least 61 seconds (`MIXPANEL_MIN_REQUEST_INTERVAL_SECONDS=61` in `.env`)
+- Retry on 429 with exponential backoff, honoring `Retry-After` headers (`MIXPANEL_MAX_RETRIES=6`)
+- Never fire parallel JQL queries in a loop without a delay
+- Consolidate multiple filters into a single query where possible instead of running separate queries
+
+The `MixpanelClient` in `src/connectors/mixpanel.py` implements this automatically. Do not bypass it with raw `requests` calls.
+
+**Reference:** https://developer.mixpanel.com/reference/rate-limits
+
 ## Connector Setup (Mixpanel for Current Request)
 
 If you are running the current Mixpanel request, fill these in `.env`:

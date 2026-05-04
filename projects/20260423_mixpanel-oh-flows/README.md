@@ -27,8 +27,7 @@ Phase 0 ✅ DONE — simulation completed
     ↓
 Phase 1 ✅ PASSED — API vs UI within 0.2%
     ↓
-Phase 2 — [You UI × 4] + [Me API × 1]
-    GATE: property list agreed (registered, ViewMode, isMobileApp/deviceType confirmed)
+Phase 2 ✅ PASSED — all properties confirmed
     ↓
 Phase 3 — [You export Users CSV with groupId]
     GATE: agent differentiator found or ruled out
@@ -87,21 +86,29 @@ Phase 8 — [Me persona cards]
 
 ---
 
-## Phase 2 — Open Property Questions 🔲 NEXT
+## Phase 2 — Open Property Questions ✅ COMPLETED
 
-| # | Question | Who | Method |
-|---|---|---|---|
-| Q1 | Does `registered` exist as a People property? What values? | **[You → UI]** | Mixpanel → Users report → add `registered` column, note distinct values |
-| Q2 | Does `ViewMode` exist as an event property? Values 1/3/4? | **[You → UI]** | Events breakdown table, property = `ViewMode`, any large event |
-| Q3 | Does `isMobileApp` exist? True/false? Or use `deviceType` instead? | **[You → UI]** | Breakdown table, property = `isMobileApp` then `deviceType` |
-| Q4 | Any other properties surfaced in Phase 0 simulation | **[You → UI]** | Breakdown on the most interesting new events found |
-| Q5 | Is `authenticated` stable per user across sessions, or does it flip within a session? | **[Me → API]** | 1 JQL query — sample `distinct_id`s with >1 session, check value distribution |
+| # | Question | Answer |
+|---|---|---|
+| Q1 | Does `registered` exist as a People property? What values? | ✅ Yes — user-level property. Values: `true` / `false`. Stable sign-up status, set once. |
+| Q2 | Does `ViewMode` exist as an event property? Values? | ✅ Yes — values: `1` (1,825,544) · `3` (1,182,000) · `4` (231,657) · `2` (3,595) · `5` (1) |
+| Q3a | Does `isMobileApp` exist? | ✅ Yes — `false`: 3,140,143 · `true`: 1,866. Very skewed; use `deviceType` as primary. |
+| Q3b | Does `deviceType` exist? | ✅ Yes — `mobile`: 2,696,946 · `desktop`: 751,817 · `tablet`: 156,727 · `unknown`: 5. Use alongside `isMobileApp`. |
+| Q4 | Any other interesting properties? | None surfaced beyond what was already known. |
+| Q5 | Is `authenticated` stable per user or event-level? | ✅ Event-level property (flips per session). `registered` is the stable user-level property (sign-up status). |
 
-You paste Q1–Q4 results back in a sentence each. I run Q5 and report.
+**Key decisions from Phase 2:**
+- Use `ViewMode` values: `1` = Matrix email, `3` = Agent-shared link, `4` = Consumer-shared link. OH-02 flows confirmed.
+- Use `deviceType` as primary platform split (`mobile` / `desktop` / `tablet`). Keep `isMobileApp` as secondary cross-check.
+- `registered` (People property, true/false) → use for user-level cohort segmentation.
+- `authenticated` (event property, flips per session) → use for session-level Flow splits.
+- OH-03 and OH-07 confirmed viable.
+
+**Phase 2 gate: PASSED. Proceeding to Phase 3.**
 
 ---
 
-## Phase 3 — Agent vs Consumer Differentiator Investigation 🔲 Pending
+## Phase 3 — Agent vs Consumer Differentiator Investigation 🔲 NEXT
 
 **Updated hypothesis from Phase 0:** `groupId` may be the key differentiator.
 
