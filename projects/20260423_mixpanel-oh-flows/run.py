@@ -20,11 +20,18 @@ OUTPUT_RAW = _PROJECT_DIR / "data" / "raw"
 OUTPUT_PROCESSED = _PROJECT_DIR / "data" / "processed"
 
 
+APP_ID = "OneHome"
+
+
 def main() -> None:
     client = MixpanelClient()
 
-    print("Fetching top events for last 7 days...")
-    top_events = client.event_counts_last_n_days(n_days=7, limit=25)
+    # Phase 1: top events filtered by appId=OneHome.
+    # Note: 'Basic Event Cleaner' is a UI-only Data View filter — it cannot be applied via JQL.
+    # When comparing to UI numbers, apply Basic Event Cleaner manually in the Insights report.
+    print(f"Fetching top events for last 7 days (appId={APP_ID})...")
+    top_events = client.event_counts_by_app(app_id=APP_ID, n_days=7)
+    top_events = top_events[:25]
     write_json(OUTPUT_RAW / "top_events_7d.json", top_events)
     write_csv(OUTPUT_PROCESSED / "top_events_7d.csv", top_events)
 

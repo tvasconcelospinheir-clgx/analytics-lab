@@ -1,5 +1,8 @@
 # OneHome Persona Discovery — Master Plan
-Last updated: 2026-05-03
+
+> **This file has been merged into README.md which is the single source of truth.**
+> All plan content, phase status, and flow configurations now live in [README.md](README.md).
+> This file is kept only so existing links don't break.
 
 ---
 
@@ -22,9 +25,15 @@ Last updated: 2026-05-03
 
 **Goal:** Confirm my API data matches what you see in Mixpanel UI before trusting any number I produce.
 
-**What I do:** Pull top 10 events by count, last 30 days via API → print ranked table.
+**Required filters:**
+- API queries: `appId = OneHome` (applied in JQL)
+- UI reports: `appId = OneHome` AND `Basic Event Cleaner = True`
 
-**What you do [UI]:** Mixpanel → Events report → last 30 days → rank by total.
+⚠️ `Basic Event Cleaner` is a Mixpanel UI-side Data View / computed filter — it cannot be applied in JQL API queries. API numbers will therefore include some bot/QA events that the UI excludes. Expect a small downward difference in UI numbers vs API numbers.
+
+**What I do:** Pull top events by count, last 7 days via API (appId filter applied) → print ranked table.
+
+**What you do [UI]:** Mixpanel → Insights → new report → Total events, Last 7 days → breakdown by Event Name → add filter `appId = OneHome` AND `Basic Event Cleaner = True` → sort descending.
 
 **Pass criteria:** Top 3 events match in order, within ~5% volume.
 **Gate:** Nothing proceeds until this passes. If off, we debug first.

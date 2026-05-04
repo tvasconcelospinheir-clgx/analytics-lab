@@ -1,7 +1,10 @@
 import base64
 import json
 import os
+import random
+import time
 from datetime import date, timedelta
+from threading import Lock
 from typing import Any, Dict, List, Optional
 
 import requests
@@ -17,6 +20,13 @@ class MixpanelClient:
         self.base_url = os.getenv("MIXPANEL_API_BASE", "https://mixpanel.com/api/query").strip()
         verify_ssl_value = os.getenv("MIXPANEL_VERIFY_SSL", "true").strip().lower()
         self.ca_bundle = os.getenv("MIXPANEL_CA_BUNDLE", "").strip()
+        # Mixpanel Query API limit includes 60 queries/hour; default to one request per 61 seconds.
+        self.min_request_interval_seconds = float(
+            os.getenv("MIXPANEL_MIN_REQUEST_INTERVAL_SECONDS", "61").strip() or "61"
+        )
+        self.max_retries = int(os.getenv("MIXPANEL_MAX_RETRIES", "6").strip() or "6")
+        self._next_request_ts = 0.0
+        self._rate_lock = Lock()
 
         if not self.username or not self.secret:
             raise ValueError(
@@ -38,15 +48,65 @@ class MixpanelClient:
             "Accept": "application/json",
         }
 
+    def _wait_for_rate_limit_window(self) -> None:
+        if self.min_request_interval_seconds <= 0:
+            return
+
+        with self._rate_lock:
+            now = time.monotonic()
+            wait_seconds = self._next_request_ts - now
+            if wait_seconds > 0:
+                time.sleep(wait_seconds)
+            self._next_request_ts = time.monotonic() + self.min_request_interval_seconds
+
+    def _request(
+        self,
+        method: str,
+        url: str,
+        *,
+        params: Optional[Dict[str, Any]] = None,
+        data: Optional[Dict[str, Any]] = None,
+        timeout: int = 60,
+    ) -> requests.Response:
+        attempts = 0
+        while True:
+            self._wait_for_rate_limit_window()
+            response = requests.request(
+                method,
+                url,
+                headers=self._headers(),
+                params=params,
+                data=data,
+                timeout=timeout,
+                verify=self.verify,
+            )
+
+            if response.status_code != 429:
+                return response
+
+            if attempts >= self.max_retries:
+                body = response.text.strip()
+                raise RuntimeError(
+                    f"Mixpanel request hit repeated rate limits (429) after {attempts + 1} attempts: {body[:300]}"
+                )
+
+            retry_after = response.headers.get("Retry-After", "").strip()
+            retry_after_seconds = 0.0
+            if retry_after:
+                try:
+                    retry_after_seconds = float(retry_after)
+                except ValueError:
+                    retry_after_seconds = 0.0
+
+            # Exponential backoff with light jitter for contention relief.
+            backoff_seconds = min(2**attempts, 60)
+            sleep_seconds = max(retry_after_seconds, backoff_seconds) + random.uniform(0, 0.5)
+            time.sleep(sleep_seconds)
+            attempts += 1
+
     def _get(self, endpoint: str, params: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
         url = f"{self.base_url}{endpoint}"
-        response = requests.get(
-            url,
-            headers=self._headers(),
-            params=params,
-            timeout=60,
-            verify=self.verify,
-        )
+        response = self._request("GET", url, params=params, timeout=60)
         response.raise_for_status()
         return response.json()
 
@@ -57,13 +117,7 @@ class MixpanelClient:
         if self.project_id:
             payload["project_id"] = self.project_id
 
-        response = requests.post(
-            url,
-            headers=self._headers(),
-            data=payload,
-            timeout=90,
-            verify=self.verify,
-        )
+        response = self._request("POST", url, data=payload, timeout=90)
         if not response.ok:
             body = response.text.strip()
             raise RuntimeError(
@@ -85,6 +139,9 @@ class MixpanelClient:
             return {"results": [text]}
 
     def event_counts_last_n_days(self, n_days: int = 7, limit: int = 20) -> List[Dict[str, Any]]:
+        # WARNING: This method has NO appId filter. It returns events across ALL apps in the
+        # Mixpanel project (Matrix, OneHome, Realist, Agent Portal, etc.).
+        # DO NOT use this for OneHome analysis — use event_counts_by_app(app_id='OneHome') instead.
         start = date.today() - timedelta(days=n_days)
         end = date.today()
 
@@ -109,13 +166,7 @@ class MixpanelClient:
     def _get_v2(self, path: str, params: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
         """GET against the /api/2.0/ REST endpoints (separate from the /api/query/ JQL base)."""
         url = f"https://mixpanel.com/api/2.0{path}"
-        response = requests.get(
-            url,
-            headers=self._headers(),
-            params=params,
-            timeout=60,
-            verify=self.verify,
-        )
+        response = self._request("GET", url, params=params, timeout=60)
         response.raise_for_status()
         return response.json()
 
@@ -194,7 +245,11 @@ class MixpanelClient:
         n_days: int = 90,
     ) -> List[Dict[str, Any]]:
         """Return all event names (and their total count) where properties.appId == app_id,
-        sorted descending by count, over the last n_days."""
+        sorted descending by count, over the last n_days.
+
+        Note: 'Basic Event Cleaner' is a UI-side Data View / computed property in Mixpanel
+        and cannot be applied in JQL. Apply it manually in the UI when cross-checking numbers.
+        """
         start = (date.today() - timedelta(days=n_days)).isoformat()
         end = date.today().isoformat()
 

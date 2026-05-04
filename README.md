@@ -44,6 +44,8 @@ If you are running the current Mixpanel request, fill these in `.env`:
 - `MIXPANEL_SERVICE_ACCOUNT_SECRET`
 - `MIXPANEL_VERIFY_SSL=true`
 - `MIXPANEL_CA_BUNDLE=` (optional org CA bundle path)
+- `MIXPANEL_MIN_REQUEST_INTERVAL_SECONDS=61` (recommended default to respect Query API 60 queries/hour)
+- `MIXPANEL_MAX_RETRIES=6` (automatic retries when API returns 429 rate-limited)
 
 ## Connector Setup (Confluence Context for Workspace Chats)
 
