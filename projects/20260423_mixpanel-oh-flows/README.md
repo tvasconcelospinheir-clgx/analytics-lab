@@ -154,77 +154,123 @@ Phase 8 — [Me persona cards]
 
 ## Phase 5 — Build Flows 🔲 Pending
 
-**Segmentation strategy:** TBD after Phase 4.
-- Likely primary split: `authenticated` (session-level) or `groupId`/`registered` (user-level)
-- Likely secondary splits: `ViewMode` (entry context), `deviceType` or `isMobileApp` (platform)
+**Segmentation dimensions available (confirmed in Phase 2):**
 
-**For each flow (where applicable):** Run once for `authenticated=false` and once for `authenticated=true`. Export Top Paths CSV per run.
+| Property | Type | Values | Use in flows |
+|---|---|---|---|
+| `authenticated` | Event-level | true / false | Filter or breakdown on flows where login state matters |
+| `registered` | User-level (stable) | true / false | Filter on user property to split sign-ups vs guests |
+| `ViewMode` | Event-level | 1 (Matrix Email entry) · 3 (Agent-Shared link) · 4 (Consumer-Shared link) | OH-02 filter per variant |
+| `deviceType` | Event-level | mobile · desktop · tablet | Breakdown or separate runs on OH-03 and others |
+| `isMobileApp` | Event-level | true · false (very skewed — 99.9% false) | Use `deviceType` instead as primary |
+| `agentIDs` populated | User-level | true / false | Partial lens: confirmed consumer-with-agent vs unknown |
+
+**Global filter on ALL flows:** `appId = OneHome` AND `Basic Event Cleaner = True`
+
+**Export format for each flow:** Top Paths view, expand to top 10 rows, export as CSV. Name each file to match the flow ID (e.g. `OH-01_all.csv`, `OH-01_mobile.csv`).
+
+**Note on `authenticated`:** It is an event-level property — within a single session a user can flip between authenticated and unauthenticated. Apply it as a filter at flow-build time to select sessions where the first event is authenticated=true (or false), not as a user cohort.
 
 ### OH-01 — Post App Load (All Sessions)
 **Anchor A:** `Initial App Load` | **Steps after A:** 5 | **Counting:** Sessions
 **Hide:** `What's New - Flow - "Next" Click`, `What's New - Welcome Screen Pop Up`, `What's New - Flow - Cancel Click`
-**View:** Top Paths — expand to top 10 rows | **Save as:** `OH-01 - Post App Load (All Sessions)`
+**View:** Top Paths — expand to top 10 rows
+**Segmentation:**
+- Run 1: No extra filter → `OH-01_all.csv`
+- Run 2: Filter `authenticated = true` → `OH-01_auth.csv`
+- Run 3: Filter `authenticated = false` → `OH-01_anon.csv`
+
+**Save report as:** `OH-01 - Post App Load (All Sessions)`
 
 ### OH-02 — Entry Context by Referral Type (ViewMode splits)
-*Conditional: only if Q2 in Phase 2 confirms ViewMode exists with values 1/3/4*
-
 Build 4 parallel flows, same config, different filters:
-- **OH-02a:** `ViewMode = 1` → Entry via Matrix Email
-- **OH-02b:** `ViewMode = 3` → Entry via Agent-Shared Link
-- **OH-02c:** `ViewMode = 4` → Entry via Consumer-Shared Link
-- **OH-02d:** No ViewMode filter → Entry Direct/Organic
+- **OH-02a:** Filter `ViewMode = 1` → Entry via Matrix Email → `OH-02a.csv`
+- **OH-02b:** Filter `ViewMode = 3` → Entry via Agent-Shared Link → `OH-02b.csv`
+- **OH-02c:** Filter `ViewMode = 4` → Entry via Consumer-Shared Link → `OH-02c.csv`
+- **OH-02d:** No ViewMode filter → Entry Direct/Organic → `OH-02d.csv`
 
 **Anchor A:** First `Property Details - Landed` after entry | **Steps after A:** 5 | **Counting:** Sessions
+**No additional segmentation needed** — ViewMode IS the segmentation here.
+
+**Save report as:** `OH-02 - Entry Context by ViewMode`
 
 ### OH-03 — Post App Load: Mobile vs Web
-*Conditional: only if `isMobileApp` or `deviceType` confirmed in Phase 2*
+Duplicate OH-01 config (same anchor, same hidden events).
+**Segmentation:** Breakdown by `deviceType` (mobile / desktop / tablet) OR run 3 separate filters:
+- Run 1: Filter `deviceType = mobile` → `OH-03_mobile.csv`
+- Run 2: Filter `deviceType = desktop` → `OH-03_desktop.csv`
+- Run 3: Filter `deviceType = tablet` → `OH-03_tablet.csv`
 
-Duplicate OH-01, add breakdown by `isMobileApp` (true/false) or `deviceType`.
-**Save as:** `OH-03 - Post App Load: Mobile vs Web`
+**Save report as:** `OH-03 - Post App Load: Mobile vs Web`
 
 ### OH-04 — Browse to Property Details Journey
 **Anchor A:** `Browse Properties - Landed` | **Anchor B:** `Property Details - Landed`
 **Steps between A and B:** show all | **Steps after B:** 5 | **Counting:** Sessions
 **Hide between steps:** `[Custom] Photo Browsing`
-**Save as:** `OH-04 - Browse to Property Details`
+**Segmentation:**
+- Run 1: No extra filter → `OH-04_all.csv`
+- Run 2: Breakdown by `deviceType` → `OH-04_by_device.csv`
+
+**Save report as:** `OH-04 - Browse to Property Details`
 
 ### OH-05a — Property Details Full Behavior (Unfiltered)
 **Anchor A:** `Property Details - Landed` | **Steps after A:** 7 | **Counting:** Sessions
 **Do NOT hide anything** — let `[Custom] Photo Browsing` dominate.
-**Save as:** `OH-05a - Property Details (All)`
+**Segmentation:** No additional filter — this is the baseline.
+→ Export: `OH-05a_all.csv`
+
+**Save report as:** `OH-05a - Property Details (All)`
 
 ### OH-05b — Property Details Excluding Photo Scrollers ← KEY PERSONA SEPARATOR
 Duplicate OH-05a, add **Exclusion step:** users who did `[Custom] Photo Browsing` at any step after A.
-**Save as:** `OH-05b - Property Details (Excluding Photo Scrollers)`
+**Segmentation:**
+- Run 1: No extra filter → `OH-05b_all.csv`
+- Run 2: Filter `authenticated = true` → `OH-05b_auth.csv`
+- Run 3: Filter `authenticated = false` → `OH-05b_anon.csv`
+
+**Save report as:** `OH-05b - Property Details (Excluding Photo Scrollers)`
 
 ### OH-06 — Paths to High-Intent Actions (3 end-anchored flows)
-- **OH-06a:** End anchor = `[Custom] High Intent Action`, steps before: 5, Counting: Uniques
-- **OH-06b:** End anchor = `Property Details - "Favorite" Click`, steps before: 5, Counting: Uniques
-- **OH-06c:** End anchor = `Property Details - Schedule a Tour Click`, steps before: 5, Counting: Uniques
+- **OH-06a:** End anchor = `[Custom] High Intent Action`, steps before: 5, Counting: Uniques → `OH-06a.csv`
+- **OH-06b:** End anchor = `Property Details - "Favorite" Click`, steps before: 5, Counting: Uniques → `OH-06b.csv`
+- **OH-06c:** End anchor = `Property Details - Schedule a Tour Click`, steps before: 5, Counting: Uniques → `OH-06c.csv`
+
+**Segmentation on all three:** Also run with filter `registered = true` to see signed-up users only → `OH-06a_registered.csv`, etc.
+
+**Save report as:** `OH-06 - Paths to High Intent`
 
 ### OH-07 — Authentication Friction After Anonymous Entry
-*Conditional: only if `authenticated` confirmed as stable enough in Phase 2 Q5*
-
 **Anchor A:** `Entry Link - Session Not Logged In` | **Steps after A:** 5 | **Counting:** Sessions
-**Add breakdown by:** `isMobileApp` if available
-**Save as:** `OH-07 - Auth Friction After Anonymous Entry`
+**Segmentation:**
+- Run 1: No extra filter → `OH-07_all.csv`
+- Run 2: Breakdown by `deviceType` (mobile vs desktop) → `OH-07_by_device.csv`
+
+**Save report as:** `OH-07 - Auth Friction After Anonymous Entry`
 
 ### OH-08 — Compare Feature Adoption
 **Anchor A:** `Compare Page - Landed` | **Steps before A:** 4 | **Steps after A:** 4 | **Counting:** Sessions
-**Save as:** `OH-08 - Compare Feature Adoption`
+**Segmentation:** No additional filter — this is a niche feature, keep unfiltered to maximize volume.
+→ Export: `OH-08_all.csv`
+
+**Save report as:** `OH-08 - Compare Feature Adoption`
 
 ### OH-09 — PropertyFit Onboarding Drop-off
-*Conditional: only if recent PropertyFit activity confirmed via API*
-
 **Anchor A:** `PropertyFit Onboarding - Flow - What describes you best? - Choice Selection`
 **Anchor B:** `PropertyFit Onboarding - Flow - Skip Click` OR `PropertyFit Onboarding - Rank Features - Rank Features Click`
 **View:** Sankey (NOT Top Paths) | **Counting:** Uniques
-**Save as:** `OH-09 - PropertyFit Onboarding Drop-off`
+**Segmentation:** No additional filter — keep unfiltered (this event is already narrow).
+→ Export: `OH-09_all.csv`
+
+**Save report as:** `OH-09 - PropertyFit Onboarding Drop-off`
 
 ### OH-10 — Browsing Landed to Property Details Landed
 **Anchor A:** `Browsing - Landed` | **Anchor B:** `Property Details - Landed`
 **Steps between A and B:** show all | **Steps after B:** 3 | **Counting:** Sessions
-**Save as:** `OH-10 - Browsing Landed to Property Details Landed`
+**Segmentation:**
+- Run 1: No extra filter → `OH-10_all.csv`
+- Run 2: Filter `deviceType = mobile` → `OH-10_mobile.csv`
+
+**Save report as:** `OH-10 - Browsing Landed to Property Details Landed`
 
 ---
 
