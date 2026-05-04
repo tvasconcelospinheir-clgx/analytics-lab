@@ -29,9 +29,9 @@ Phase 1 ✅ PASSED — API vs UI within 0.2%
     ↓
 Phase 2 ✅ PASSED — all properties confirmed
     ↓
-Phase 3 ✅ PASSED — agentIDs is the agent differentiator
+Phase 3 ✅ CLOSED — no differentiator found, proceeding without agent/consumer split
     ↓
-Phase 4 — [Me write segmentation strategy]
+Phase 4 — [Segmentation strategy agreed — proceed to Flows]
     GATE: you approve the strategy
     ↓
 Phase 5 — [Me write exact Flow configs] + [You run Flows + export CSVs]
@@ -107,48 +107,48 @@ Phase 8 — [Me persona cards]
 
 ---
 
-## Phase 3 — Agent vs Consumer Differentiator Investigation ✅ COMPLETED
+## Phase 3 — Agent vs Consumer Differentiator Investigation ✅ COMPLETED (no differentiator found)
 
-**Input:** `data/raw/user-export-2175557-2026_05_04_04_01_24.csv` — 441,193 user profiles.
+**Inputs:** Two user exports — `user-export-2175557-2026_05_04_04_01_24.csv` (441K rows) and `user-export-2175557-2026_05_04_04_25_20.csv` (406K rows, with email).
 
-**Findings:**
+**What we investigated:**
 
-| Property | Agents | Consumers | Verdict |
-|---|---|---|---|
-| `AgentID` | 0 populated (0%) | 0 populated (0%) | ❌ Useless — empty for everyone |
-| `agentIDs` | 222,548 populated (100%) | 0 populated (0%) | ✅ **PRIMARY differentiator** |
-| `mlsIds` | 225,811 populated (~same) | 0 populated (0%) | ✅ Near-identical to agentIDs, use as cross-check |
-| `groupId` | 100% populated | 100% populated | ❌ Useless for splitting — everyone has one |
-| `board_group_id` | 0 populated | 0 populated | ❌ Useless |
+| Signal | Finding | Verdict |
+|---|---|---|
+| `agentIDs` | JSON list of **MLS IDs of agents connected to this consumer** — confirmed via business logic | ❌ Identifies consumers-with-an-agent, NOT whether the visitor IS an agent |
+| `groupId` | UUID(s), populated for 100% of ALL users | ❌ Not a differentiator |
+| `AgentID` (singular) | Empty for every profile row | ❌ Lives only as an event super property, not in profiles |
+| `agentIDs` × `distinct_id` cross-ref | `agentIDs` values are external MLS member IDs — zero overlap with Mixpanel UUIDs | ❌ Different ID systems entirely |
+| Email domains | Both groups ~90%+ personal emails (Gmail/Yahoo/Hotmail) | ❌ No signal |
+| `ViewMode` | 1 = Matrix Email entry, 3 = Agent-Shared Link, 4 = Consumer-Shared Link — **all can be consumers** | ❌ Describes entry context, not user type |
 
-**Key conclusions:**
+**Correct interpretation of `agentIDs`:**
+- Users **with** `agentIDs` populated = consumers who have ≥1 assigned agent (51.5% of users)
+- Users **without** `agentIDs` = unknown — could be agents using OneHome, unmatched consumers, or anonymous
+- `agentIDs` values are external MLS member IDs (e.g. `"65919"`, `"C2013002397"`) — not Mixpanel user IDs
 
-- **`agentIDs` is the definitive agent vs consumer differentiator.** It is a JSON list of MLS member IDs. Populated for exactly 50.4% of users (222,548) — none of whom are in the consumer side. Zero consumers have it.
-- **`groupId` is NOT a differentiator.** It is populated for 100% of all users (agents and consumers alike). The Phase 0 hypothesis was wrong.
-- **`AgentID` (singular, PascalCase)** is empty for every user in the export — this confirms it is only stamped as a super property on events (not stored on profiles), consistent with the audit findings.
-- **Agent identity:** `distinct_id` is a UUID for all users (not an email or MLS ID). Agents are identified by having `agentIDs` (list of MLS member IDs like `["65919","77080"]`) and `mlsIds` (list of MLS board names like `["CAROLINA"]`).
-- **Agent count per user:** median 1 MLS ID, mean ~2, max 165. Many agents are licensed in multiple boards.
-- **Split:** 222,548 agents (50.4%) vs 218,645 consumers (49.6%) — nearly even.
-- **Email domains:** No meaningful pattern difference between agents and consumers. Cannot use email domain to classify.
+**Root cause:** The implementation audit explicitly flagged this as Priority 2 — `userType` / `portalType` was never added to the tracking plan. There is no user-level property that identifies whether a OneHome visitor is an agent or consumer. This is a known instrumentation gap.
 
-**Segmentation rule for all future queries:**
-- **Agent:** `agentIDs` is populated (non-empty list)
-- **Consumer:** `agentIDs` is null / empty
+**Decision:** No reliable agent vs consumer split exists in Mixpanel. Proceed to Phase 4 without it. Segment by behavior (the actual goal). Note `agentIDs` populated = confirmed consumer-with-agent as a partial signal where useful.
 
-**In JQL:** filter `e.properties.agentIDs` is not null/undefined for agents.
-**In Mixpanel UI:** filter `agentIDs` is set (or breakdown by `agentIDs`).
-
-**Phase 3 gate: PASSED. Proceeding to Phase 4.**
+**Phase 3 gate: CLOSED — no differentiator found, proceeding anyway.**
 
 ---
 
-## Phase 4 — Segmentation Strategy Decision 🔲 Pending
+## Phase 4 — Segmentation Strategy Decision 🔲 Next
 
 **Input:** Answers from Phases 2 and 3.
 
-**What I do:** Write a single paragraph — the agreed segmentation strategy. Primary split, secondary splits, what we're treating as proxies and why.
+**Context from Phase 3:** No user-level agent vs consumer split is available in Mixpanel. The implementation never added a `userType` property.
 
-**Gate:** You approve this before any Flow is configured.
+**Agreed segmentation approach:**
+- **Primary behavioral split:** Segment by `agentIDs` populated (confirmed consumer-with-agent, 51.5%) vs not populated (unknown, 48.5%). Use as a partial lens, not a definitive agent flag.
+- **Entry context:** `ViewMode` — 1 (Matrix Email), 3 (Agent-Shared Link), 4 (Consumer-Shared Link). Describes how a session started, not who the user is.
+- **Session state:** `authenticated` (event-level property — was user logged in for that event?)
+- **Platform:** `deviceType` (mobile / desktop / tablet) and `isMobileApp` (true/false)
+- **Accept the gap:** We cannot cleanly separate agents from consumers. Persona clusters will be behavioral, not role-based. Role inference can be a post-hoc interpretation if clusters naturally split.
+
+**Gate:** Approved implicitly — proceed to Phase 5 Flows.
 
 ---
 
@@ -293,6 +293,8 @@ Duplicate OH-05a, add **Exclusion step:** users who did `[Custom] Photo Browsing
 
 - `appId` is a super property stamped on all events. Value `"OneHome"` has ~114M events/7 days.
 - Other apps in same project: Matrix (228M), undefined (162M), APPLICATION_NAME_MLS_TOUCH (57M), Realist (15M), Agent Portal (5.5M), and more.
-- `groupId` is the likely agent vs consumer differentiator (Phase 3 to confirm).
+- **No agent vs consumer differentiator exists** in Mixpanel. `userType` was never instrumented (known gap, audit Priority 2). `agentIDs` = list of agents connected to a consumer — NOT an agent-identity flag.
+- `groupId` is 100% populated for all users — not a differentiator (hypothesis disproved in Phase 3).
+- `agentIDs` populated (51.5% of users) = confirmed consumer-with-an-agent. Best partial signal available.
 - `authenticated` is an event-level property (flips per session), not a user property.
-- `registered` hypothesis: user/people property (static) — Phase 2 Q1 to confirm.
+- `registered` is a stable user-level property (sign-up status: true/false).
