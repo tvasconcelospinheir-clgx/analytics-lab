@@ -10,6 +10,16 @@
       ],
       "group": "build",
       "problemMatcher": []
+    },
+    {
+      "label": "Sync Confluence Context",
+      "type": "shell",
+      "command": "python",
+      "args": [
+        "scripts/sync_confluence_context.py"
+      ],
+      "group": "build",
+      "problemMatcher": []
     }
   ]
 }

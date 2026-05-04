@@ -106,6 +106,118 @@ class MixpanelClient:
         rows = result.get("results", [])
         return rows[:limit]
 
+    def _get_v2(self, path: str, params: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+        """GET against the /api/2.0/ REST endpoints (separate from the /api/query/ JQL base)."""
+        url = f"https://mixpanel.com/api/2.0{path}"
+        response = requests.get(
+            url,
+            headers=self._headers(),
+            params=params,
+            timeout=60,
+            verify=self.verify,
+        )
+        response.raise_for_status()
+        return response.json()
+
+    def event_properties(self, event_name: str, days: int = 7) -> List[str]:
+        """Return all property names tracked on a given event."""
+        from datetime import date, timedelta
+        params: Dict[str, Any] = {
+            "event": event_name,
+            "type": "general",
+            "unit": "day",
+            "interval": days,
+        }
+        if self.project_id:
+            params["project_id"] = self.project_id
+        data = self._get_v2("/events/properties", params=params)
+        return list(data.get("data", {}).keys())
+
+    def property_values(
+        self,
+        event_name: str,
+        prop_name: str,
+        days: int = 7,
+        limit: int = 20,
+    ) -> List[Any]:
+        """Return top distinct values for a property on a given event."""
+        params: Dict[str, Any] = {
+            "event": event_name,
+            "name": prop_name,
+            "type": "general",
+            "unit": "day",
+            "interval": days,
+            "limit": limit,
+        }
+        if self.project_id:
+            params["project_id"] = self.project_id
+        data = self._get_v2("/events/properties/values", params=params)
+        return data.get("data", [])
+
+    def event_property_keys_jql(self, event_name: str, app_id: str, days: int = 3) -> Dict[str, int]:
+        """Use JQL groupBy with custom reducer to collect property keys + occurrence count."""
+        from datetime import date, timedelta
+        start = (date.today() - timedelta(days=days)).isoformat()
+        end = date.today().isoformat()
+        jql = f"""
+        function main() {{
+          return Events({{
+            from_date: '{start}',
+            to_date:   '{end}'
+          }})
+          .filter(function(e) {{
+            return e.name === {repr(event_name)}
+              && e.properties
+              && e.properties.appId === '{app_id}';
+          }})
+          .groupBy(['name'], function(accum, events) {{
+            var keys = accum || {{}};
+            events.forEach(function(e) {{
+              Object.keys(e.properties || {{}}).forEach(function(k) {{
+                keys[k] = (keys[k] || 0) + 1;
+              }});
+            }});
+            return keys;
+          }});
+        }}
+        """.strip()
+        result = self.run_jql(jql)
+        rows = result.get("results", [])
+        # groupBy returns [{key: [event_name], value: {prop: count, ...}}]
+        if rows and isinstance(rows[0], dict) and "value" in rows[0]:
+            return rows[0]["value"]
+        return {}
+
+    def event_counts_by_app(
+        self,
+        app_id: str,
+        n_days: int = 90,
+    ) -> List[Dict[str, Any]]:
+        """Return all event names (and their total count) where properties.appId == app_id,
+        sorted descending by count, over the last n_days."""
+        start = (date.today() - timedelta(days=n_days)).isoformat()
+        end = date.today().isoformat()
+
+        jql = f"""
+        function main() {{
+          return Events({{
+            from_date: '{start}',
+            to_date:   '{end}'
+          }})
+          .filter(function(e) {{
+            return e.properties && e.properties.appId === '{app_id}';
+          }})
+          .groupBy(['name'], mixpanel.reducer.count())
+          .map(function(r) {{
+            return {{ event: r.key[0], count: r.value }};
+          }})
+          .sortDesc('count');
+        }}
+        """.strip()
+
+        result = self.run_jql(jql)
+        return result.get("results", [])
+
     def simple_funnel_last_7_days(
         self,
         step1_event: str,

@@ -45,6 +45,24 @@ If you are running the current Mixpanel request, fill these in `.env`:
 - `MIXPANEL_VERIFY_SSL=true`
 - `MIXPANEL_CA_BUNDLE=` (optional org CA bundle path)
 
+## Connector Setup (Confluence Context for Workspace Chats)
+
+To provide Confluence documentation context in Copilot chats for this workspace, configure these variables in `.env`:
+
+- `CONFLUENCE_BASE_URL` (example: `https://your-company.atlassian.net`)
+- `CONFLUENCE_EMAIL`
+- `CONFLUENCE_API_TOKEN`
+- `CONFLUENCE_SPACE_KEY`
+- `CONFLUENCE_PAGE_LIMIT=25`
+- `CONFLUENCE_VERIFY_SSL=true`
+- `CONFLUENCE_CA_BUNDLE=` (optional org CA bundle path)
+
+Sync local Confluence context cache:
+
+- `python scripts/sync_confluence_context.py`
+
+This writes lightweight documentation snapshots into `references/confluence/` so chat sessions can read local context quickly.
+
 ## Run Current Request
 
 - `python projects/20260423_mixpanel-oh-flows/run.py`

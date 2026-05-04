@@ -13,6 +13,7 @@
 - If the user asks for the general source README or shared-code context, read `src/README.md`.
 - At the start of each new chat in this repository, read `references/README.md` first.
 - If the task is Mixpanel implementation quality, identity, or instrumentation, also read `references/onehome-mixpanel-implementation-audit.md` before proposing changes.
+- If `references/confluence/README.md` exists, read it at chat start for documentation context, then read specific files under `references/confluence/` as needed.
 - Treat `references/` as project memory for architecture decisions, prior audits, and analytics conventions.
 
 ## Project Goal Memory
