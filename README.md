@@ -35,6 +35,20 @@ The product goal for the current request is to understand the most common flows 
    - `conda env create -f environment.yml`
    - `conda activate analytics_base`
 
+## GitHub Push Conventions
+
+- **Push after any significant change** — new analysis, phase completions, schema/connector updates, README edits.
+- **Always push the whole workspace**, not just the active project. Both `projects/` and `src/` are updated together; a project-only push leaves the connector or shared code out of sync.
+- Exclude secrets — `.env` is gitignored and must never be committed. Store credentials in session only.
+
+```
+git add .                          # stage all workspace changes (except .gitignored)
+git commit -m "short description"
+git push origin main
+```
+
+---
+
 ## API Rate Limit Best Practices
 
 When querying external APIs (Mixpanel, Confluence, or any future connector), always respect published rate limits to avoid being blocked.
