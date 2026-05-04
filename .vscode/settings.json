@@ -3,5 +3,63 @@
   "python.envFile": "${workspaceFolder}/.env",
   "python.analysis.extraPaths": [
     "."
-  ]
+  ],
+  "chat.tools.terminal.autoApprove": {
+    "/^\\$env:MIXPANEL_SERVICE_ACCOUNT_SECRET='s3797ycNc40AaY31sDxucLYtSIJk4AbS'; if \\(Test-Path Env:MIXPANEL_SERVICE_ACCOUNT_SECRET\\) \\{ \\$v=\\(Get-Item Env:MIXPANEL_SERVICE_ACCOUNT_SECRET\\)\\.Value; if \\(\\[string\\]::IsNullOrWhiteSpace\\(\\$v\\)\\) \\{ 'Secret is empty in session\\.' \\} else \\{ \"Secret is loaded in session \\(length=\\$\\(\\$v\\.Length\\)\\)\\.\" \\} \\} else \\{ 'Secret is not set in session\\.' \\}$/": {
+      "approve": true,
+      "matchCommandLine": true
+    },
+    "/^Set-Location \"c:\\\\Users\\\\tvasconcelospinheir\\\\OneDrive - CoreLogic Solutions, LLC\\\\CoreLogic\\\\6\\. Requests\\\\analytics-lab\"; if \\(\\[string\\]::IsNullOrWhiteSpace\\(\\$env:MIXPANEL_SERVICE_ACCOUNT_SECRET\\)\\) \\{ throw 'MIXPANEL_SERVICE_ACCOUNT_SECRET is missing in this session\\.' \\}; C:/Users/tvasconcelospinheir/AppData/Local/anaconda3/python\\.exe projects/20260423_mixpanel-oh-flows/run\\.py$/": {
+      "approve": true,
+      "matchCommandLine": true
+    },
+    "/^Set-Location \"c:\\\\Users\\\\tvasconcelospinheir\\\\OneDrive - CoreLogic Solutions, LLC\\\\CoreLogic\\\\6\\. Requests\\\\analytics-lab\"; \\$certPath = C:/Users/tvasconcelospinheir/AppData/Local/anaconda3/python\\.exe -c \"import certifi; print\\(certifi\\.where\\(\\)\\)\"; \\$env:MIXPANEL_CA_BUNDLE = \\$certPath\\.Trim\\(\\); \\$env:MIXPANEL_VERIFY_SSL='true'; if \\(-not \\(Test-Path \\$env:MIXPANEL_CA_BUNDLE\\)\\) \\{ throw \"CA bundle path not found: \\$env:MIXPANEL_CA_BUNDLE\" \\}; \"Using CA bundle: \\$env:MIXPANEL_CA_BUNDLE\"$/": {
+      "approve": true,
+      "matchCommandLine": true
+    },
+    "/^Set-Location \"c:\\\\Users\\\\tvasconcelospinheir\\\\OneDrive - CoreLogic Solutions, LLC\\\\CoreLogic\\\\6\\. Requests\\\\analytics-lab\"; \\$env:MIXPANEL_VERIFY_SSL='false'; if \\(\\[string\\]::IsNullOrWhiteSpace\\(\\$env:MIXPANEL_SERVICE_ACCOUNT_SECRET\\)\\) \\{ throw 'MIXPANEL_SERVICE_ACCOUNT_SECRET is missing in this session\\.' \\}; C:/Users/tvasconcelospinheir/AppData/Local/anaconda3/python\\.exe projects/20260423_mixpanel-oh-flows/run\\.py$/": {
+      "approve": true,
+      "matchCommandLine": true
+    },
+    "/^Set-Location \"c:\\\\Users\\\\tvasconcelospinheir\\\\OneDrive - CoreLogic Solutions, LLC\\\\CoreLogic\\\\6\\. Requests\\\\analytics-lab\"; \\$env:MIXPANEL_VERIFY_SSL='false'; if \\(\\[string\\]::IsNullOrWhiteSpace\\(\\$env:MIXPANEL_SERVICE_ACCOUNT_SECRET\\)\\) \\{ throw 'Secret missing\\.' \\}; C:/Users/tvasconcelospinheir/AppData/Local/anaconda3/python\\.exe projects/20260423_mixpanel-oh-flows/run\\.py; \\$env:MIXPANEL_VERIFY_SSL='true'$/": {
+      "approve": true,
+      "matchCommandLine": true
+    },
+    "/^C:/Users/tvasconcelospinheir/AppData/Local/anaconda3/python\\.exe -c \"\nimport json\nwith open\\(r'c:\\\\Users\\\\tvasconcelospinheir\\\\OneDrive - CoreLogic Solutions, LLC\\\\CoreLogic\\\\6\\. Requests\\\\analytics-lab\\\\projects\\\\20260423_mixpanel-oh-flows\\\\data\\\\raw\\\\onehome_events_raw\\.json'\\) as f:\n    data = json\\.load\\(f\\)\n# Show first event to see its structure and actual property keys\nif data:\n    first = data\\[0\\]\n    print\\(json\\.dumps\\(first, indent=2\\)\\)\n\"\n$/": {
+      "approve": true,
+      "matchCommandLine": true
+    },
+    "/^Set-Location \"c:\\\\Users\\\\tvasconcelospinheir\\\\OneDrive - CoreLogic Solutions, LLC\\\\CoreLogic\\\\6\\. Requests\\\\analytics-lab\"; \\$env:MIXPANEL_VERIFY_SSL='false'; C:/Users/tvasconcelospinheir/AppData/Local/anaconda3/python\\.exe -c \"\nimport sys; sys\\.path\\.insert\\(0, '\\.'\\)\nfrom src\\.connectors\\.mixpanel import MixpanelClient\nclient = MixpanelClient\\(\\)\n\n# Sample 5 events and show their appId value \\(or absence\\)\njql = '''\nfunction main\\(\\) \\{\n  return Events\\(\\{from_date: '2026-04-26', to_date: '2026-05-03'\\}\\)\n    \\.reduce\\(function\\(accum, events\\) \\{\n      var seen = accum \\|\\| \\{\\};\n      events\\.forEach\\(function\\(e\\) \\{\n        var val = \\(e\\.properties && e\\.properties\\.appId !== undefined\\)\n                  \\? String\\(e\\.properties\\.appId\\)\n                  : '__MISSING__';\n        seen\\[val\\] = \\(seen\\[val\\] \\|\\| 0\\) \\+ 1;\n      \\}\\);\n      return seen;\n    \\}, \\{\\}\\);\n\\}\n'''\nresult = client\\.run_jql\\(jql\\)\nimport json; print\\(json\\.dumps\\(result, indent=2\\)\\)\n\"; \\$env:MIXPANEL_VERIFY_SSL='true'\n$/": {
+      "approve": true,
+      "matchCommandLine": true
+    },
+    "/^Set-Location \"c:\\\\Users\\\\tvasconcelospinheir\\\\OneDrive - CoreLogic Solutions, LLC\\\\CoreLogic\\\\6\\. Requests\\\\analytics-lab\"; \\$env:MIXPANEL_VERIFY_SSL='false'; C:/Users/tvasconcelospinheir/AppData/Local/anaconda3/python\\.exe -c \"\nimport sys; sys\\.path\\.insert\\(0, '\\.'\\)\nfrom src\\.connectors\\.mixpanel import MixpanelClient\nclient = MixpanelClient\\(\\)\n\n# Get distinct appId values and counts\njql = '''\nfunction main\\(\\) \\{\n  return Events\\(\\{from_date: '2026-04-26', to_date: '2026-05-03'\\}\\)\n    \\.groupBy\\(\\[function\\(e\\)\\{ return e\\.properties \\? String\\(e\\.properties\\.appId\\) : '__MISSING__'; \\}\\],\n              mixpanel\\.reducer\\.count\\(\\)\\)\n    \\.map\\(function\\(r\\)\\{ return \\{appId_value: r\\.key\\[0\\], count: r\\.value\\}; \\}\\)\n    \\.sortDesc\\('count'\\);\n\\}\n'''\nimport json\nresult = client\\.run_jql\\(jql\\)\nprint\\(json\\.dumps\\(result\\.get\\('results', \\[\\]\\)\\[:20\\], indent=2\\)\\)\n\"; \\$env:MIXPANEL_VERIFY_SSL='true'\n$/": {
+      "approve": true,
+      "matchCommandLine": true
+    },
+    "/^Set-Location \"c:\\\\Users\\\\tvasconcelospinheir\\\\OneDrive - CoreLogic Solutions, LLC\\\\CoreLogic\\\\6\\. Requests\\\\analytics-lab\"; \\$env:MIXPANEL_VERIFY_SSL='false'; C:/Users/tvasconcelospinheir/AppData/Local/anaconda3/python\\.exe projects/20260423_mixpanel-oh-flows/run\\.py; \\$env:MIXPANEL_VERIFY_SSL='true'$/": {
+      "approve": true,
+      "matchCommandLine": true
+    },
+    "/^Set-Location \"c:\\\\Users\\\\tvasconcelospinheir\\\\OneDrive - CoreLogic Solutions, LLC\\\\CoreLogic\\\\6\\. Requests\\\\analytics-lab\"; git rev-parse --abbrev-ref HEAD; git remote -v$/": {
+      "approve": true,
+      "matchCommandLine": true
+    },
+    "/^Set-Location \"c:\\\\Users\\\\tvasconcelospinheir\\\\OneDrive - CoreLogic Solutions, LLC\\\\CoreLogic\\\\6\\. Requests\\\\analytics-lab\"; git add \\.github/copilot-instructions\\.md README\\.md projects/20260423_mixpanel-oh-flows/README\\.md projects/20260423_mixpanel-oh-flows/PLAN\\.md projects/20260423_mixpanel-oh-flows/run\\.py src/connectors/mixpanel\\.py; git commit -m \"Enforce OneHome filter rules and consolidate project SSOT\"$/": {
+      "approve": true,
+      "matchCommandLine": true
+    },
+    "/^Set-Location \"c:\\\\Users\\\\tvasconcelospinheir\\\\OneDrive - CoreLogic Solutions, LLC\\\\CoreLogic\\\\6\\. Requests\\\\analytics-lab\"; git push origin main$/": {
+      "approve": true,
+      "matchCommandLine": true
+    },
+    "/^Set-Location \"c:\\\\Users\\\\tvasconcelospinheir\\\\OneDrive - CoreLogic Solutions, LLC\\\\CoreLogic\\\\6\\. Requests\\\\analytics-lab\"; git add README\\.md projects/20260423_mixpanel-oh-flows/README\\.md; git commit -m \"Record Phase 2 answers and add API rate-limit best practices to workspace README\"; git push origin main$/": {
+      "approve": true,
+      "matchCommandLine": true
+    },
+    "/^Set-Location \"c:\\\\Users\\\\tvasconcelospinheir\\\\OneDrive - CoreLogic Solutions, LLC\\\\CoreLogic\\\\6\\. Requests\\\\analytics-lab\"; git add README\\.md; git commit -m \"Add GitHub push conventions to workspace README\"; git push origin main$/": {
+      "approve": true,
+      "matchCommandLine": true
+    }
+  }
 }

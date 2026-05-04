@@ -29,8 +29,7 @@ Phase 1 ✅ PASSED — API vs UI within 0.2%
     ↓
 Phase 2 ✅ PASSED — all properties confirmed
     ↓
-Phase 3 — [You export Users CSV with groupId]
-    GATE: agent differentiator found or ruled out
+Phase 3 ✅ PASSED — agentIDs is the agent differentiator
     ↓
 Phase 4 — [Me write segmentation strategy]
     GATE: you approve the strategy
@@ -108,20 +107,38 @@ Phase 8 — [Me persona cards]
 
 ---
 
-## Phase 3 — Agent vs Consumer Differentiator Investigation 🔲 NEXT
+## Phase 3 — Agent vs Consumer Differentiator Investigation ✅ COMPLETED
 
-**Updated hypothesis from Phase 0:** `groupId` may be the key differentiator.
+**Input:** `data/raw/user-export-2175557-2026_05_04_04_01_24.csv` — 441,193 user profiles.
 
-**What you do [UI]:** Run a **Users/People report** in Mixpanel:
-- Columns: `distinct_id`, `AgentID`, `groupId`, any email/name/username field visible
-- No filter
-- Export top 200 rows as CSV → send me
+**Findings:**
 
-**What I look for:**
-- Is `groupId` populated only for agents? Does it correlate with `AgentID`?
-- Does `distinct_id == AgentID` for any rows?
-- Do `AgentID` values follow a recognizable pattern (e.g., all 6-digit MLS member IDs)?
-- Is there a `$email` or `$name` super property that distinguishes types?
+| Property | Agents | Consumers | Verdict |
+|---|---|---|---|
+| `AgentID` | 0 populated (0%) | 0 populated (0%) | ❌ Useless — empty for everyone |
+| `agentIDs` | 222,548 populated (100%) | 0 populated (0%) | ✅ **PRIMARY differentiator** |
+| `mlsIds` | 225,811 populated (~same) | 0 populated (0%) | ✅ Near-identical to agentIDs, use as cross-check |
+| `groupId` | 100% populated | 100% populated | ❌ Useless for splitting — everyone has one |
+| `board_group_id` | 0 populated | 0 populated | ❌ Useless |
+
+**Key conclusions:**
+
+- **`agentIDs` is the definitive agent vs consumer differentiator.** It is a JSON list of MLS member IDs. Populated for exactly 50.4% of users (222,548) — none of whom are in the consumer side. Zero consumers have it.
+- **`groupId` is NOT a differentiator.** It is populated for 100% of all users (agents and consumers alike). The Phase 0 hypothesis was wrong.
+- **`AgentID` (singular, PascalCase)** is empty for every user in the export — this confirms it is only stamped as a super property on events (not stored on profiles), consistent with the audit findings.
+- **Agent identity:** `distinct_id` is a UUID for all users (not an email or MLS ID). Agents are identified by having `agentIDs` (list of MLS member IDs like `["65919","77080"]`) and `mlsIds` (list of MLS board names like `["CAROLINA"]`).
+- **Agent count per user:** median 1 MLS ID, mean ~2, max 165. Many agents are licensed in multiple boards.
+- **Split:** 222,548 agents (50.4%) vs 218,645 consumers (49.6%) — nearly even.
+- **Email domains:** No meaningful pattern difference between agents and consumers. Cannot use email domain to classify.
+
+**Segmentation rule for all future queries:**
+- **Agent:** `agentIDs` is populated (non-empty list)
+- **Consumer:** `agentIDs` is null / empty
+
+**In JQL:** filter `e.properties.agentIDs` is not null/undefined for agents.
+**In Mixpanel UI:** filter `agentIDs` is set (or breakdown by `agentIDs`).
+
+**Phase 3 gate: PASSED. Proceeding to Phase 4.**
 
 ---
 
